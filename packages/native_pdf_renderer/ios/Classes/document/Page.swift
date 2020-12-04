@@ -19,13 +19,13 @@ class Page {
 
     var width: Int {
         get {
-            return Int(boxRect.width)
+            return Int(isLandscape ? boxRect.height : boxRect.width) //
         }
     }
 
     var height: Int {
         get {
-            return Int(boxRect.height)
+            return Int(isLandscape ? boxRect.width : boxRect.height) //
         }
     }
 
@@ -55,16 +55,25 @@ class Page {
 
     func render(width: Int, height: Int, crop: CGRect?, compressFormat: CompressFormat, backgroundColor: UIColor) -> Page.DataResult? {
         let pdfBBox = renderer.getBoxRect(.mediaBox)
-        let bitmapSize = isLandscape ? CGSize(width: height, height: width) : CGSize(width: width, height: height)
+        let bitmapSize = CGSize(width: width, height: height) // 
         let stride = Int(bitmapSize.width * 4)
         var tempData = Data(repeating: 0, count: stride * Int(bitmapSize.height))
         var data: Data?
         var success = false
-        let sx = CGFloat(width) / pdfBBox.width
-        let sy = CGFloat(height) / pdfBBox.height
-        let tx = isLandscape ? CGFloat(height) / 2 : CGFloat(0)
-        let ty = CGFloat(0)
-        let angle = CGFloat(renderer.rotationAngle) * CGFloat.pi / 180;
+        let sx = CGFloat(isLandscape ? height : width) / pdfBBox.width
+        let sy = CGFloat(isLandscape ? width : height) / pdfBBox.height
+        
+        let angle = CGFloat(renderer.rotationAngle * -1) * CGFloat.pi / 180;
+        
+        let tx = CGFloat(0) // isLandscape ? CGFloat(height) / 2 :
+        let ty = isLandscape ? CGFloat(height) : CGFloat(0)
+        
+        print(tx)
+        print(ty)
+        print(pdfBBox.width)
+        print(pdfBBox.height)
+        print(angle)
+        
         tempData.withUnsafeMutableBytes { (ptr) in
             let rawPtr = ptr.baseAddress
             let rgb = CGColorSpaceCreateDeviceRGB()
@@ -72,12 +81,11 @@ class Page {
             if context != nil {
                 context!.scaleBy(x: sx, y: sy)
                 context!.translateBy(x: tx, y: ty)
-                context!.rotate(by: -angle)
+                context!.rotate(by: angle)
                 context!.setFillColor(backgroundColor.cgColor)
                 context!.fill(pdfBBox)
                 context!.drawPDFPage(renderer)
                 var image = UIImage(cgImage: context!.makeImage()!)
-
                 if (crop != nil){
                     // Perform cropping in Core Graphics
                     let cutImageRef: CGImage = (image.cgImage?.cropping(to:crop!))!
