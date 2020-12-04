@@ -68,12 +68,6 @@ class Page {
         let tx = CGFloat(0) // isLandscape ? CGFloat(height) / 2 :
         let ty = isLandscape ? CGFloat(height) : CGFloat(0)
         
-        print(tx)
-        print(ty)
-        print(pdfBBox.width)
-        print(pdfBBox.height)
-        print(angle)
-        
         tempData.withUnsafeMutableBytes { (ptr) in
             let rawPtr = ptr.baseAddress
             let rgb = CGColorSpaceCreateDeviceRGB()
