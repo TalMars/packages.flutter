@@ -33,7 +33,7 @@ class NativePDFRendererPlugin(private val registrar: Registrar) : MethodCallHand
 
     override fun onMethodCall(call: MethodCall, rawResult: Result) {
         val result = MethodResultWrapper(rawResult)
-        when(call.method) {
+        when (call.method) {
             "open.document.data" -> openDocumentDataHandler(call, result)
             "open.document.file" -> openDocumentFileHandler(call, result)
             "open.document.asset" -> openDocumentAssetHandler(call, result)
@@ -46,12 +46,13 @@ class NativePDFRendererPlugin(private val registrar: Registrar) : MethodCallHand
     }
 
     private fun openDocumentDataHandler(call: MethodCall, result: Result) {
-        try {
-            val data = call.arguments<ByteArray>()!!
-            Thread {
+        Thread {
+            try {
+                val data = call.arguments<ByteArray>()!!
+
                 val documentRenderer = openDataDocument(data)
                 result.success(documents.register(documentRenderer).infoMap)
-            }.start()
+            }
         } catch (e: NullPointerException) {
             result.error("PDF_RENDER", "Need call arguments: data!", null)
         } catch (e: IOException) {
@@ -60,16 +61,16 @@ class NativePDFRendererPlugin(private val registrar: Registrar) : MethodCallHand
             result.error("PDF_RENDER", "Can't create PDF renderer", null)
         } catch (e: Exception) {
             result.error("PDF_RENDER", "Unknown error", null)
-        }
+        }.start()
     }
 
     private fun openDocumentFileHandler(call: MethodCall, result: Result) {
-        try {
-            val path = call.arguments<String>()!!
-            Thread {
+        Thread {
+            try {
+                val path = call.arguments<String>()!!
                 val documentRenderer = openFileDocument(File(path))
                 result.success(documents.register(documentRenderer).infoMap)
-            }.start()
+            }
         } catch (e: NullPointerException) {
             result.error("PDF_RENDER", "Need call arguments: path", null)
         } catch (e: FileNotFoundException) {
@@ -80,16 +81,16 @@ class NativePDFRendererPlugin(private val registrar: Registrar) : MethodCallHand
             result.error("PDF_RENDER", "Can't create PDF renderer", null)
         } catch (e: Exception) {
             result.error("PDF_RENDER", "Unknown error", null)
-        }
+        }.start()
     }
 
     private fun openDocumentAssetHandler(call: MethodCall, result: Result) {
-        try {
-            val path = call.arguments<String>()!!
-            Thread {
+        Thread {
+            try {
+                val path = call.arguments<String>()!!
                 val documentRenderer = openAssetDocument(path)
                 result.success(documents.register(documentRenderer).infoMap)
-            }.start()
+            }
         } catch (e: NullPointerException) {
             result.error("PDF_RENDER", "Need call arguments: path", null)
         } catch (e: FileNotFoundException) {
@@ -100,7 +101,7 @@ class NativePDFRendererPlugin(private val registrar: Registrar) : MethodCallHand
             result.error("PDF_RENDER", "Can't create PDF renderer", null)
         } catch (e: Exception) {
             result.error("PDF_RENDER", "Unknown error", null)
-        }
+        }.start()
     }
 
     private fun closeDocumentHandler(call: MethodCall, result: Result) {
@@ -132,46 +133,47 @@ class NativePDFRendererPlugin(private val registrar: Registrar) : MethodCallHand
     }
 
     private fun openPageHandler(call: MethodCall, result: Result) {
-        try {
-            val documentId = call.argument<String>("documentId")!!
-            val pageNumber  = call.argument<Int>("page")!!
-            Thread {
+        Thread {
+            try {
+                val documentId = call.argument<String>("documentId")!!
+                val pageNumber = call.argument<Int>("page")!!
                 val pageRenderer = documents.get(documentId).openPage(pageNumber)
                 result.success(pages.register(documentId, pageRenderer).infoMap)
-            }.start()
+            }
         } catch (e: NullPointerException) {
             result.error("PDF_RENDER", "Need call arguments: documentId & page!", null)
         } catch (e: RepositoryItemNotFoundException) {
             result.error("PDF_RENDER", "Document not exist in documents", null)
         } catch (e: Exception) {
             result.error("PDF_RENDER", "Unknown error", null)
-        }
+        }.start()
     }
 
     private fun renderHandler(call: MethodCall, result: Result) {
-        try {
-            val pageId = call.argument<String>("pageId")!!
-            val width = call.argument<Int>("width")!!
-            val height  = call.argument<Int>("height")!!
-            val format = call.argument<Int>("format") ?: 1 //0 Bitmap.CompressFormat.PNG
-            val backgroundColor = call.argument<String>("backgroundColor")
-            val color  = if (backgroundColor != null) Color.parseColor(backgroundColor) else Color.TRANSPARENT
+        Thread {
+            try {
+                val pageId = call.argument<String>("pageId")!!
+                val width = call.argument<Int>("width")!!
+                val height = call.argument<Int>("height")!!
+                val format = call.argument<Int>("format") ?: 1 //0 Bitmap.CompressFormat.PNG
+                val backgroundColor = call.argument<String>("backgroundColor")
+                val color = if (backgroundColor != null) Color.parseColor(backgroundColor) else Color.TRANSPARENT
 
-            val crop = call.argument<Boolean>("crop")!!;
-            val cropX = if (crop) call.argument<Int>("crop_x")!! else 0;
-            val cropY = if (crop) call.argument<Int>("crop_y")!! else 0;
-            val cropH = if (crop) call.argument<Int>("crop_height")!! else 0;
-            val cropW = if (crop) call.argument<Int>("crop_width")!! else 0;
+                val crop = call.argument<Boolean>("crop")!!;
+                val cropX = if (crop) call.argument<Int>("crop_x")!! else 0;
+                val cropY = if (crop) call.argument<Int>("crop_y")!! else 0;
+                val cropH = if (crop) call.argument<Int>("crop_height")!! else 0;
+                val cropW = if (crop) call.argument<Int>("crop_width")!! else 0;
 
-            val page = pages.get(pageId)
+                val page = pages.get(pageId)
 
-            Thread {
+
                 val results = page.render(width, height, color, format, crop, cropX, cropY, cropW, cropH).toMap
                 result.success(results)
-            }.start()
+            }
         } catch (e: Exception) {
             result.error("PDF_RENDER", "Unexpected error", e)
-        }
+        }.start()
     }
 
     private fun openDataDocument(data: ByteArray): Pair<ParcelFileDescriptor, PdfRenderer>? {
@@ -183,7 +185,7 @@ class NativePDFRendererPlugin(private val registrar: Registrar) : MethodCallHand
         return openFileDocument(tempDataFile)
     }
 
-    private fun openAssetDocument(assetPath: String): Pair<ParcelFileDescriptor, PdfRenderer>?{
+    private fun openAssetDocument(assetPath: String): Pair<ParcelFileDescriptor, PdfRenderer>? {
         val fullAssetPath = registrar.lookupKeyForAsset(assetPath)
         val tempAssetFile = File(registrar.context().cacheDir, "$randomFilename.pdf")
         if (!tempAssetFile.exists()) {
